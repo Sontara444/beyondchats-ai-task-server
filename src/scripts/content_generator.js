@@ -49,7 +49,7 @@ const runEnhancement = async () => {
             console.log(`Scraped ${sourceContents.length} external sources.`);
 
             // 4. Update Article with LLM
-            const newContent = await llmService.rewriteArticle(article, sourceContents);
+            const newContent = await llmService.rewriteArticle(article, sourceContents, references);
 
             // 5. Store Updated Article
             if (!article.isEnhanced) {

@@ -8,8 +8,26 @@ const resetEnhanced = async () => {
         await connectDB();
         console.log("Connected to DB.");
 
-        const result = await Article.updateMany({}, { $set: { isEnhanced: false, source: "BeyondChats" } });
-        console.log(`Reset ${result.modifiedCount} articles to isEnhanced: false`);
+        // Revert content for articles that have originalContent saved
+        const articlesToRevert = await Article.find({ originalContent: { $exists: true, $ne: null } });
+        console.log(`Found ${articlesToRevert.length} articles to revert content.`);
+
+        for (const article of articlesToRevert) {
+            article.content = article.originalContent;
+            article.originalContent = undefined;
+            await article.save();
+        }
+
+        const result = await Article.updateMany({}, {
+            $set: {
+                isEnhanced: false,
+                source: "BeyondChats",
+                references: []
+            }
+        });
+
+        console.log(`Reverted content for ${articlesToRevert.length} articles.`);
+        console.log(`Reset flags for ${result.modifiedCount} articles.`);
 
         process.exit(0);
     } catch (error) {
