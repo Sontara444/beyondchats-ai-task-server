@@ -66,6 +66,7 @@ const getOldestArticles = async () => {
         // Collect promises for fetching individual article details
         const articlePromises = [];
 
+        // Collect articles from the last page
         $last(articleElements).each((i, el) => {
             const url = $last(el).attr('href');
             const title = $last(el).text().trim();
@@ -74,18 +75,34 @@ const getOldestArticles = async () => {
             }
         });
 
-        // If we want the absolutely oldest 5, and the last page has X items (e.g. 10),
-        // and they are listed Newest -> Oldest on that page,
-        // then the last 5 items on that page are the oldest.
-        // Let's reverse the list to have Oldest -> Newest (relative to that page)
-        // Actually, usually Page 1: 1-10 (Newest), Page 15: 141-150 (Oldest).
-        // On Page 15, item 1 is #141 (newer) and item 10 is #150 (oldest).
-        // So the last items in the list are the oldest.
+        // If we don't have enough articles (5), try the previous page
+        if (articlePromises.length < 5 && lastPage > 1) {
+            console.log(`Only found ${articlePromises.length} on last page. Fetching page ${lastPage - 1}...`);
+            const prevPageUrl = `https://beyondchats.com/blogs/page/${lastPage - 1}/`;
+            const prevResponse = await fetch(prevPageUrl);
+            const prevHtml = await prevResponse.text();
+            const $prev = cheerio.load(prevHtml);
 
-        // Let's take the last 5 items from the list.
+            const prevElements = $prev('h2 > a');
+            $prev(prevElements).each((i, el) => {
+                const url = $prev(el).attr('href');
+                const title = $prev(el).text().trim();
+                if (url && title) {
+                    // Prepend because these are newer than the last page
+                    articlePromises.unshift({ title, url });
+                }
+            });
+        }
+
+        // We want the 5 oldest. 
+        // Logic: 
+        // Last Page items are definitely the oldest.
+        // Second to Last Page items are newer than Last Page.
+        // So articlePromises has [SecondLastPageItems... , LastPageItems...]
+        // We want the very last 5 items from this combined list.
         const articlesToFetch = articlePromises.slice(-5); // Get last 5
 
-        console.log(`Found ${articlePromises.length} articles on last page. Processing ${articlesToFetch.length} oldest.`);
+        console.log(`Found total ${articlePromises.length} articles. Processing ${articlesToFetch.length} oldest.`);
 
         for (const articleMeta of articlesToFetch) {
             try {

@@ -26,6 +26,13 @@ const articleSchema = new mongoose.Schema({
         type: String,
         default: "BeyondChats",
     },
+    isEnhanced: {
+        type: Boolean,
+        default: false
+    },
+    originalContent: {
+        type: String
+    }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Article", articleSchema);
