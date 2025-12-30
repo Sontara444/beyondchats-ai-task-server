@@ -162,7 +162,10 @@ const getOldestArticles = async () => {
                         description: description,
                         publishedDate: publishedDate,
                         author: author,
-                        source: "BeyondChats"
+                        source: "BeyondChats",
+                        isEnhanced: false,
+                        originalContent: null,
+                        references: []
                     },
                     { upsert: true, new: true }
                 );

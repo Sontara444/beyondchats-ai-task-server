@@ -32,7 +32,11 @@ const articleSchema = new mongoose.Schema({
     },
     originalContent: {
         type: String
-    }
+    },
+    references: [{
+        title: String,
+        url: String
+    }]
 }, { timestamps: true });
 
 module.exports = mongoose.model("Article", articleSchema);

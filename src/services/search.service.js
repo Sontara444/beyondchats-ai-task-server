@@ -24,27 +24,20 @@ const searchGoogle = async (query) => {
 
         $('div.g').each((i, el) => {
             const linkElement = $(el).find('a').first();
+            const titleElement = $(el).find('h3').first();
             const href = linkElement.attr('href');
+            const title = titleElement.text().trim() || "External Source";
 
             if (href && href.startsWith("http") && !href.includes("google.com")) {
                 if (!href.includes("youtube.com") && !href.includes("beyondchats.com")) {
-                    results.push(href);
+                    results.push({ title, url: href });
                 }
             }
         });
 
-        // Fallback: If blocked or different structure (Google blocks simple fetch often)
-        if (results.length === 0) {
-            console.log("Standard selectors failed. Dumping first 500 chars of HTML to debug if needed.");
-            // console.log(html.substring(0, 500));
-            // Google often redirects to consent page or captcha on server IPs.
-        }
-
         const topResults = results.slice(0, 2);
-        console.log(`Found top results: ${topResults.join(", ")}`);
+        console.log(`Found top results: ${topResults.map(r => r.url).join(", ")}`);
 
-        // If still empty, return some dummy URLs to verify the rest of the pipeline works?
-        // No, let's return clean empty array.
         return topResults;
 
     } catch (error) {

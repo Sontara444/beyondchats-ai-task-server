@@ -65,3 +65,15 @@ exports.scrapeArticles = async (req, res) => {
         res.status(500).json({ message: "Scraping failed", error: error.message });
     }
 };
+
+// Trigger AI Enhancement
+exports.enhanceArticles = async (req, res) => {
+    try {
+        // We'll import the generator logic here or call a service
+        const enhancementService = require("../scripts/content_generator");
+        await enhancementService.runEnhancement();
+        res.status(200).json({ message: "Enhancement task triggered successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Enhancement failed", error: error.message });
+    }
+};

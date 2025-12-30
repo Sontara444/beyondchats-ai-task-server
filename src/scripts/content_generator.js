@@ -6,18 +6,21 @@ const llmService = require("../services/llm.service");
 const connectDB = require("../config/db");
 require("dotenv").config({ path: require('path').resolve(__dirname, '../../.env') });
 
-const generateContent = async () => {
+const runEnhancement = async () => {
     try {
-        await connectDB();
-        console.log("Connected to DB");
+        // Only connect if not already connected
+        if (mongoose.connection.readyState === 0) {
+            await connectDB();
+            console.log("Connected to DB");
+        }
 
         // 1. Fetch articles that haven't been processed yet 
         // fetch at most 5 that are not enhanced
-        const articles = await Article.find({ source: "BeyondChats", isEnhanced: false }).sort({ publishedDate: 1 }).limit(5);
+        const articles = await Article.find({ isEnhanced: false }).sort({ publishedDate: 1 }).limit(5);
 
         if (articles.length === 0) {
             console.log("No un-enhanced articles found to process.");
-            process.exit(0);
+            return;
         }
 
         console.log(`Found ${articles.length} articles to enhance.`);
@@ -30,11 +33,15 @@ const generateContent = async () => {
 
             // 3. Scrape Top 2 Results
             const sourceContents = [];
+            const references = [];
             if (searchResults && searchResults.length > 0) {
-                for (const url of searchResults) {
-                    if (url) {
-                        const content = await externalScraper.scrapeExternalArticle(url);
-                        if (content) sourceContents.push(content);
+                for (const result of searchResults) {
+                    if (result.url) {
+                        const content = await externalScraper.scrapeExternalArticle(result.url);
+                        if (content) {
+                            sourceContents.push(content);
+                            references.push({ title: result.title, url: result.url });
+                        }
                     }
                 }
             }
@@ -49,9 +56,9 @@ const generateContent = async () => {
                 article.originalContent = article.content;
             }
             article.content = newContent;
+            article.references = references;
 
-            // Update description to reflect the enhancement (or just take 1st paragraph of new content)
-            // Remove markdown headers for description
+            // Update description to reflect the enhancement
             const plainText = newContent.replace(/^#+\s+/gm, '').replace(/\*\*/g, '');
             article.description = plainText.substring(0, 150) + "...";
 
@@ -63,12 +70,15 @@ const generateContent = async () => {
         }
 
         console.log("All articles processed.");
-        process.exit(0);
 
     } catch (error) {
         console.error("Content Generator Error:", error);
-        process.exit(1);
+        throw error;
     }
 };
 
-generateContent();
+if (require.main === module) {
+    runEnhancement().then(() => process.exit(0)).catch(() => process.exit(1));
+}
+
+module.exports = { runEnhancement };

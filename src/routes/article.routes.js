@@ -8,5 +8,6 @@ router.post("/", articleController.createArticle);
 router.put("/:id", articleController.updateArticle);
 router.delete("/:id", articleController.deleteArticle);
 router.post("/scrape", articleController.scrapeArticles);
+router.post("/enhance", articleController.enhanceArticles);
 
 module.exports = router;
