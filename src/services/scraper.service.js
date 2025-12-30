@@ -115,8 +115,30 @@ const getOldestArticles = async () => {
                 // Extract content
                 // Selectors are guesses, need to be robust.
                 // Common content classes: .entry-content, .post-content, article .content
-                let content = $art('.entry-content').text().trim();
-                if (!content) content = $art('article').text().trim();
+                // Prioritize .post-content (found in analysis), then .entry-content
+                let contentElement = $art('.post-content').first();
+                if (contentElement.length === 0) contentElement = $art('.entry-content').first();
+
+                let content = "";
+                if (contentElement.length > 0) {
+                    const clone = contentElement.clone();
+                    // Remove junk/meta elements
+                    clone.find('.wp-applause-container, .sharedaddy, .elementor-hidden-desktop, .elementor-hidden-mobile, .elementor-hidden-tablet, .related-posts, .post-navigation, .entry-footer, script, style').remove();
+                    content = clone.text().trim();
+                }
+
+                // Fallback to a fairly specific container if possible, but avoid 'article' if it includes sidebars
+                if (!content) {
+                    const articleBody = $art('article');
+                    if (articleBody.length > 0) {
+                        const clone = articleBody.clone();
+                        clone.find('.wp-applause-container, .sharedaddy, .elementor-widget, .related-posts, .sidebar, footer, script, style').remove();
+                        content = clone.text().trim();
+                    }
+                }
+
+                // If still no content, last resort: just body text but it might be very messy
+                if (!content) content = $art('body').text().trim().substring(0, 5000);
 
                 // Description (often in meta tag)
                 const description = $art('meta[name="description"]').attr('content') || content.substring(0, 150) + "...";

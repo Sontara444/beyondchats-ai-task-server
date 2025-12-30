@@ -16,6 +16,7 @@ exports.getArticleById = async (req, res) => {
     try {
         const article = await Article.findById(req.params.id);
         if (!article) return res.status(404).json({ message: "Article not found" });
+        console.log("Fetched article from DB:", article);
         res.status(200).json(article);
     } catch (error) {
         res.status(500).json({ message: error.message });
