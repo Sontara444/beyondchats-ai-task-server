@@ -35,18 +35,32 @@ const runEnhancement = async () => {
             const sourceContents = [];
             const references = [];
             if (searchResults && searchResults.length > 0) {
+                console.log(`Processing ${searchResults.length} search results...`);
                 for (const result of searchResults) {
-                    if (result.url) {
+                    if (result.url && result.title) {
+                        console.log(`Attempting to scrape: ${result.title} (${result.url})`);
                         const content = await externalScraper.scrapeExternalArticle(result.url);
-                        if (content) {
+                        if (content && content.length > 100) {
                             sourceContents.push(content);
-                            references.push({ title: result.title, url: result.url });
+                            references.push({
+                                title: result.title,
+                                url: result.url
+                            });
+                            console.log(`✓ Successfully scraped: ${result.title}`);
+                        } else {
+                            // Even if scraping fails, keep the reference for citation
+                            references.push({
+                                title: result.title,
+                                url: result.url
+                            });
+                            console.log(`⚠ Scraping returned minimal content, but keeping reference: ${result.title}`);
                         }
                     }
                 }
             }
 
-            console.log(`Scraped ${sourceContents.length} external sources.`);
+            console.log(`Scraped ${sourceContents.length} external sources with content.`);
+            console.log(`Collected ${references.length} references for citation.`);
 
             // 4. Update Article with LLM
             const newContent = await llmService.rewriteArticle(article, sourceContents, references);
@@ -56,7 +70,9 @@ const runEnhancement = async () => {
                 article.originalContent = article.content;
             }
             article.content = newContent;
-            article.references = references;
+            article.references = references; // Always save references, even if empty
+
+            console.log(`Saving article with ${references.length} references:`, references.map(r => r.title));
 
             // Update description to reflect the enhancement
             const plainText = newContent.replace(/^#+\s+/gm, '').replace(/\*\*/g, '');
