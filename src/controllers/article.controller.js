@@ -4,7 +4,16 @@ const scraperService = require("../services/scraper.service");
 // Get all articles
 exports.getAllArticles = async (req, res) => {
     try {
-        const articles = await Article.find().sort({ publishedDate: -1 });
+        const { sort = 'newest', limit } = req.query;
+        const sortOrder = sort === 'oldest' ? 1 : -1;
+
+        let query = Article.find().sort({ publishedDate: sortOrder });
+
+        if (limit) {
+            query = query.limit(parseInt(limit));
+        }
+
+        const articles = await query;
         res.status(200).json(articles);
     } catch (error) {
         res.status(500).json({ message: error.message });
